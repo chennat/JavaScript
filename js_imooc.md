@@ -966,10 +966,231 @@ person.salary; // 50000
 person.promote = 2;
 person.salary; // 60000
 ```
+![属性标签](property_tag.jpg)
 
+* 对象标签, 对象序列化 (待补充)
 
-属性标签(configurable writable) | true true | true false | false true | false, false
--|-
-修改属性的值 | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:
-通过属性赋值属性的值| :heavy_check_mark: | :x: | :heavy_check_mark: | :x:
-delete 该属性返回 true | :heavy_check_mark: | :heavy_check_mark: | :x: | :x:
+### 数组 ###
+* 创建数组, 数组操作
+    - 概述: 数组是值的有序集合. 每个值叫做元素. 数组是弱类型, 允许含有不同类型的元素, 可以为对象或是其它数组. 
+    ```js
+    var arr = [1, true, null, undefined, {x: 1}, [1, 2, 3]];
+    var arr = [,,] //undefined * 2 数组允许最后一个元素带逗号而自动忽略    
+    ```
+    - length: (0 ~ 2*23-1)
+    - new Array
+    ```js
+    var arr1 = new Array();
+    var arr2 = new Array(100); //undefined * 100
+    var arr3 = new Array(true, false, null, 1, 2, "hi"); //[true, false, null, 1, 2, "hi"]
+    // 关键字 new 可省略 
+    ```
+    - 读写 (动态的, 无需指定的大小)
+    ```js
+    var arr = [1, 2, 3];
+    arr[3] = 4; // length 将变为 4
+    delete arr[0];
+    arr[0]; //undefined; 但 length 仍为 4, 仅将第一元素指定为 undefined
+    arr.length -= 1;
+    arr; //[undefined, 2, 3] 4 is removed
+    ```
+    - 迭代
+    ```js
+    var i = 0, n = 10;
+    var arr = [1, 2, 3, 4, 5];
+    for (; i < n; i++) {
+        console.log(arr[i]); // 1, 2, 3, 4, 5
+    }
+
+    Array.prototype.x = 'inerited';
+    for (i in arr) {
+        console.log(arr[i]); //1, 2, 3, 4, 5, inherited
+    }
+    for (i in arr) {
+        if (arr.hasOwnProperty(i)) {
+            console.log(arr[i]); //1, 2, 3, 4, 5 过滤掉原型链上属性
+        }
+    }
+    // 用 for in 弊端: 1. 无序 2. 数组 arr 自带属性将一并读入 (arr.property)
+    ```
+* 二维数组, 稀疏数组
+    - 稀疏数组并不含有从 0 开始的连续索引. 一般 length 属性值比实际元素个数大.
+    ```js
+    var arr1 = [undefined];
+    var arr2 = new Array(1);
+    0 in arr1; //true
+    0 in arr2; //false
+    arr1.length = 100;
+    arr1[99] = 123;
+    99 in arr1; //true
+    98 in arr1; //false
+
+    var arr = [,,];
+    0 in arr; //false
+    ```
+* 数组方法
+    - ES5 即要求 IE 版本为 9+.
+    - Array.prototype.join (将数组转为字符串)
+    ```js
+    function repeatString(str, n){
+        return new Array(n + 1).join(str);
+    }
+    repeatString("a", 3); //"aaa"
+    ```
+    - Array.prototype.reverse (将数组逆序, 原数组将逆序)
+    ```js
+    var arr = [1, 2, 3];
+    arr.reverse(); //[3, 2, 1]
+    arr; //[3, 2, 1] 
+    ```
+    - Array.prototype.sort (排序, 原数组被修改) 
+    ```js
+    var arr = ["a", "c", "b"];
+    arr.sort(); //["a", "b", "c"] 保证按字母表排序
+    arr = [13, 24, 51, 3];
+    arr.sort(); //[13, 24, 3, 51]
+    arr.sort(function(a, b) {
+        return a - b;
+    }); // 升序排列
+
+    arr = [{age: 25}, {age: 39}, {age: 99}];
+    arr.sort(function(a, b)) {
+        return a.age - b.age;
+    });
+    arr.forEach(function(item)) {
+        console.log('age', item.age);
+    });
+    /* result:
+    age 25
+    age 39
+    age 99
+    */
+    ```
+    - Array.prototype.concat (数组合并, 不会改变原数组)
+    ```js
+    var arr = [1, 2, 3];
+    arr.concat(4, 5); //[1, 2, 3, 4, 5]
+    arr; //[1, 2, 3]
+    arr.concat([10, 11], 13); //[1, 2, 3, 10, 11, 13]
+    arr.concat([1, [2, 3]]); //[1, 2, 3, 1, [2, 3]] 
+    ```
+    - Array.prototype.slice (返回部分数组, 左闭右开, 原数组未修改)
+    ```js
+    var arr = [1, 2, 3, 4, 5];
+    arr.slice(1, 3); //[2, 3]
+    arr.slice(1); //[2, 3, 4, 5]
+    arr.slice(1, -1); //[2, 3, 4]
+    arr.slice(-4, -3); //[2]
+    ```
+    - Array.prototype.splice (数组拼接, 原数组将修改)
+    ```js
+    var arr = [1, 2, 3, 4, 5];
+    //实例一
+    arr.splice(2); //[3, 4, 5]
+    arr; //[1, 2]
+    //实例二
+    arr.splice(2, 2); //[3, 4]
+    arr; // [1, 2, 5];
+    //实例三
+    arr.splice(1, 1, 'a', 'b'); // [2]
+    arr; //[1, 'a', 'b', 3, 4, 5]
+    ```
+    - Array.prototype.forEach (数组遍历)
+    ```js
+    var arr = [1, 2, 3, 4, 5];
+    arr.forEach(function(value, index, array) {
+        console.log(value + '|' + index + '|' + (array === arr));
+    });
+    /* output: 
+    1|0|true
+    2|1|true
+    3|2|true
+    4|3|true
+    5|4|true
+    */
+    ```
+    - Array.prototype.map (数组映射, 原数组未被修改)
+    ```js
+    var arr = [1, 2, 3];
+    arr.map(function(x) {
+        return x + 10; //[11, 12, 13]
+    }); 
+    ```
+    - Array.prototype.fitler (数组过滤, 原数组未被修改)
+    ```js
+    var arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    arr.filter(function(x, index) {
+        return index % 3 === 0 || x >= 8; // [1, 4, 7, 8, 9, 10]
+    });
+    ```
+    - Array.prototype.every (数组判断)
+    ```js
+    var arr = [1, 2, 3, 4, 5];
+    arr.every(function(x) {
+        return x < 10; //true
+    });
+    arr.every(function(x) {
+        return x < 3;
+    });
+    ```
+    - Array.prototype.some (数组判断) 
+    ```js
+    var arr = [1, 2, 3, 4, 5];
+    arr.some(function(x) {
+        return x === 3; //true
+    });
+    ```
+    - Array.prototype.reduce & reduceRight (归并, 原数组未修改)
+        + 参数一: 每一项上调用的函数
+            * 函数接受四个参数: 前一个值, 当前值, 项的索引和数组对象.
+            * 函数的任何返回值都将作为第一个参数自动传给下一项
+            ```js
+            var val = [1, 2, 3];
+            var sum = val.reduce(function(prev, cur, index, array){
+                return prev + cur; //15
+            });
+            ```
+        + 参数二: (可选) 作为归并基础的初始值
+    ```js
+    var arr = [1, 2, 3];
+    var sum = arr.reduce(function(x, y) {
+        return x + y;
+    }, 0); // 6
+    arr = [3, 9, 6];
+    var max = arr.reduce(function(x, y) {
+        console.log(x + "|" + y);
+        return x > y ? x : y;
+    });
+    //3|9
+    //9|6
+    max; //9
+
+    //仅迭代的方向相反, 原理一样
+    max = arr.reduceRight(function(x, y) {
+        console.log(x + "|" + y);
+        return x > y ? x : y;
+    });
+    //6|3
+    //9|3
+    max; //9
+    ```
+    - Array.prototype.index & lastIndexOf (数组索引的检索)
+    ```js
+    var arr = [1, 2, 3, 2, 1];
+    arr.indexOf(2); //1
+    arr.indexOf(99); //-1 查找失败
+    arr.indexOf(1, 1); // 4 从索引 1 开始查找 1
+    arr.indexOf(1, -3); // 4
+    arr.indexOf(2, -1); // -1 查找失败
+    arr.lastIndexOf(2, -1); //3
+    arr.lastIndexOf(2, -3); // 1
+    ```
+    - Array.isArray (判断是否为数组)
+    ```js
+    Array.isArray([]);
+    [] instanceof Array; //true
+    ({}).toString.apply([]) === '[object Array]'; //true
+    [].constructor === Array; //true
+    ```
+* 函数属性 & arguments
+    - 
