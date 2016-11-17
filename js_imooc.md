@@ -713,7 +713,9 @@ obj[{x:1}] = true; //Object{1: 2, [object Object]: true}
     delete obj.z; // 删除实例中的 z 属性
     obj.z; // 3
     ```
-    - Object.create() 参数一般为对象, 让新对象的原型指向参数
+    - Object.create() 
+       * 一个参数时, 创建原型指向参数的空对象。
+       * 第二个参数是可以设置新对象的属性及权限
     ```js
     var obj = Object.create({x: 1});
     obj.x; //1
@@ -1193,4 +1195,253 @@ person.salary; // 60000
     [].constructor === Array; //true
     ```
 * 函数属性 & arguments
-    - 
+    - 函数属性 & arguments
+    ```js
+    function foo(x, y, z) {
+        arguments.length; //2
+        arguments[0]; //1
+        arguments[0] = 10;
+        x; // 10 绑定关系 [严格模式仍为1]
+
+        arguments[2] = 100;
+        z; //undefined! 未传参数, 失去绑定关系
+        arguments.callee === foo; //true [严格模式下不能使用]
+    }
+
+    foo(1, 2);
+    foo.length; //3 形参个数
+    arguments.length; // 2 实参个数
+    foo.name; //"foo"
+    ```
+    - apply/call
+    ```js
+    function foo(x, y) {
+        console.log(x, y, this);
+    }
+
+    //单个数字传递
+    foo.call(100, 1, 2); // 1, 2, Number(100) 自动转化为基本包装对象
+    //传入数组
+    foo.apply(true, [3, 4]); // 3, 4, Boolean(true);
+    foo.apply(null); //undefined, undefined, window(最终指向顶端的全局 null)
+    foo.apply(undefined); //undefined, undefined, window
+    
+    //严格模式
+    foo.apply(null); //undefined, undefined, null
+    foo.apply(undefined); //undefined, undefined, undefined
+    ```
+    - bind & curry (待补充)
+
+### 函数和作用域 (闭包, 作用域)
+* 闭包: 有权访问另一个函数作用域中的变量的函数
+    - 实例
+    ```js
+    function outer() {
+        var localVal = 30;
+        return function() {
+            return localVal;
+        }
+    }
+    var func = outer();//省略此步直接调用 func(), 将返回 function(return localval);
+    func(); //30
+    ```
+    - 常见错误之循环闭包
+    ```js
+    document.body.innerHTML = "<div id = div1>aaa</div>" 
+        + "<div id = div2>bbb</div><div id = div3>ccc</div>";
+    for(var i = 1; i < 4; i++) {
+        document.getElementById("div" + i).
+            addEventListener("click", function() {
+                alert(i); //all are 4!
+            });
+    }
+
+    //解决方法
+    for(var i = 1; i < 4; i++) {
+        !function(i) { // 表示立即调用
+            document.getElementById("div" + i).
+                addEventListener("click", function(){
+                    alert(i); //1, 2, 3
+            });
+        }(i); 
+    }
+    ```
+    - 封装
+    ```js
+    (function() {
+        var _userId = 23492;
+        var _typeId = 'item';
+        var export = {};
+
+        function converter(userId){
+            return +userId;
+        }
+
+        export.getUserId = function(){
+            return converter(_userId);
+        }
+
+        export.getTypeId = function(){
+            return _typeId;
+        }
+
+        winodw.export = export; //方便外部变量调用, 没理透
+    }());
+
+    export.getUserId(); //23492
+    export.getTypeId(); //item
+
+    export._userId; //undefined
+    export._typeId; //undefined
+    export.converter; //undefined
+    ```
+    - 利弊
+        + 灵活和方便, 封装
+        + 空间浪费, 内存泄露, 性能消耗
+* 作用域
+    - 作用域链
+        + 全局
+        + 函数
+        + eval
+    ```js
+    function outer2(){
+        var local2 = 1;
+        function outer1() {
+            var local1 = 1;
+            // visit local1, local2 or global3
+        }
+        outer1();
+    }
+    var global3 = 1;
+    outer2();
+
+    function outer(){
+        var i = 1;
+        var func = new Function("console.log(typeof i);");
+        func(); //undefined
+    }
+    ```
+    - 利用函数作用域封装
+    ```js
+    //两种函数表达式的方法
+    !function main() {
+        var a, b;
+        ...
+    }();
+    //等同于
+    (function main() {
+        var a, b;
+        ...
+    })();
+    //将函数内部的变量声明为局部变量, 防止冲突
+    ```
+* ES3 执行上下文 (Execution Context EC)
+    - 实例
+    ```js
+    console.log("EC0");
+    function funcEC1(){
+        console.log("EC1");
+        var funcEC2 = function(){
+            console.log("EC2");
+            var funcEC3 = function(){
+                console.log("EC3");
+            };
+            funcEC3();
+        }
+        funcEC2();
+    }
+    funcEC1();
+    //EC0 EC1 EC2 EC3 (从最上面的全局开始)
+    ```
+    - 变量对象 (待补充)
+        + JS 解释器如何找到定义的函数和变量?
+            * 变量对象(variable Object VO)是一个抽象概念中的"对象", 它用于存储执行上下文中的:
+                - 变量
+                - 函数声明
+                - 函数参数
+
+### 面向对象编程 ###
+* 概念与继承
+    - 基于原型的继承
+    ```js
+    function Foo(){
+        this.y = 2;
+    }
+    typeof Foo.prototype; //"object"
+    Foo.prototype.x = 1;
+    var obj3 = new Foo();
+
+    obj3.y; //2 (y = 2 为 obj3 自带的属性??)
+    obj3.x; //1
+    ```
+    - prototype 属性与原型
+    ```js
+    function Foo(){}
+    typeof Foo.prototype; //"object"
+    Foo.prototype.x = 1;
+    var obj3 = new Foo();
+
+    Foo.prototype
+    {
+        constructor: Foo,
+        _proto_: Object.prototype,
+        x: 1
+    }
+
+    //应用
+    function Person(name, age){
+        this.name = name; // 在函数声明内, this 为全局对象 window
+        this.age = age; 
+    }
+
+    Person.prototype.hi = function(){
+        console.log("Hi, my name is " + this.name + "I'm" + 
+        this.age + "years old now.");
+    };
+
+    Person.prototype.LEGS_NUM = 2;
+    Person.prototype.ARMS_NUM = 2;
+    Person.prototype.walk = function(){
+        console.log(this.name + "is walking...");
+    };
+
+    function Student(name, age, className) {
+        Person.call(this, name, age);
+        this.className = className;
+    }
+
+    Student.prototype = Object.create(Person.prototype);
+    Student.prototype.constructor = Student;
+
+    Student.prototype.hi = function(){
+        console.log("Hi, my name is" + this.name + "I'm" + 
+            this.age + " years old now, and from " + this className + ".");
+    };
+
+    Student.prototype.learn = function(subject){
+        console.log(this.name + 'is learning' + subject +
+            'at' + this.className + '.');
+    };
+
+    var nat = new Student("Nat", 24, "Class 3, Grade 2");
+    nat.hi(); //Hi, my name is Nat, I'm 27 years old now. and from C3,G2
+    nat.LEGS_NUM; // 2
+    nat.walk(); //Nat is walking...
+    nat.learn('math'); //Nat is learning math at Class3, Grade 2.
+    ```
+    ![原型链](prototype.jpg)
+    - Object.getPrototypeOf() 返回对象的原型
+* prototype 属性
+    - 改变 prototype
+    ```js
+    Student.prototype.x = 101;
+    nat.x; // 101
+
+    Student.prototype = {y: 2};
+    nat.y; //undefined
+    nat.x; //101 新的指向不会影响到原先 nat 已指向 Stdudent.prototype.
+
+    var Mat = new Student('mat', 3, 'thew');
+    Mat.x; //undefined
+    Mat.y; //2
+    ```
